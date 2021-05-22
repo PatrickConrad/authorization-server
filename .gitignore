@@ -14,7 +14,7 @@ node_modules/
 /build
 
 # misc
-config/
+config.env
 testing/
 .DS_Store
 .env.local
