@@ -131,7 +131,8 @@ const deleteUser = async (req, res, next) =>{
     try{
         if(!req.user || !req.admin) return next(new ErrorResponse("Must be a admin", 401));
         const {id} = req.params;
-        await models.User.findByIdAndDelete(id);
+        const user = await models.User.findByIdAndDelete(id);
+        if(!user) return next(new ErrorResponse("No user deleted", 400))
         res.status(200).json({
             success: true
         })

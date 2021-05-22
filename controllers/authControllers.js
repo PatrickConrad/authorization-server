@@ -175,7 +175,6 @@ const forgotPassword = async(req, res, next) => {
         if(req.isLoggedIn) return next(new ErrorResponse("Alrady logged in", 400))
         const {identifier, contactPreference} = req.body;
         const user = await models.User.findOne({username: identifier}) || await models.User.findOne({email: identifier});
-        console.log("contact", user.contactPreference);
         if(!user) return next(new ErrorResponse("User not found", 404));
         const contactType = !contactPreference ? user.contactPreference : contactPreference;
         if(contactType === 'email' || !user.phoneVerified){
