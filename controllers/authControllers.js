@@ -83,6 +83,7 @@ const login = async(req, res, next) => {
         const hashedPin = await helpers.bcrypt.hashPassword(pin);
         const pinToken = await helpers.jwt.sign({id: user._id, host: req.hostname}, "phone");
         user.phonePin = hashedPin;
+        console.log("pin", pin)
         const combinedEmail = user.phoneNumber + user.phoneCarrierEmail;
         await user.save();
         //const isSent = await sendMessage("phone", combinedEmail, "verify", pin);
@@ -180,6 +181,7 @@ const forgotPassword = async(req, res, next) => {
         const contactType = !contactPreference ? user.contactPreference : contactPreference;
         if(contactType === 'email' || !user.phoneVerified){
             console.log("resetId", user._id)
+            console.log("host", req.hostname)
             const resetToken = await helpers.jwt.sign({id: user._id, host: req.hostname}, "resetPW");
             console.log("resetTok", resetToken)
             user.resetToken = resetToken;

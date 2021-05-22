@@ -16,7 +16,7 @@ const connectDb = async() => {
         }
         const connectionString = `${process.env.DB_URI}`
         const connectDB = await mongoose.connect(connectionString, dbOptions)
-        return console.log(`Node has successfully connected to ${process.env.DB_NAME} Atlas database!`)
+        return console.log(`Node has successfully connected to database!`)
 
     }
     catch(err){
