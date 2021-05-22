@@ -3,10 +3,7 @@ const Promise = require("bluebird");
 
 Promise.promisifyAll(redis);
 
-const client = redis.createClient({
-    port: `${process.env.REDIS_PORT}`,
-    host: `${process.env.REDIS_URL}`
-});
+const client = redis.createClient(process.env.REDIS_URL);
 
 client.on('connect', ()=> {
     console.log("Client conected to redis")
