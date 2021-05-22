@@ -9,6 +9,7 @@ const register = async(req, res, next) => {
         if(!firstName, !lastName, !email, !username, !password){
             return next(new ErrorResponse('Please enter all required information!', 400));
         }
+        console.log('testing', req.body)
         const exists = await models.User.findOne({username}) || await models.User.findOne({email})
         if(exists) return next(new ErrorResponse("Username or email already in use.", 400));
         const hashPassword = await helpers.bcrypt.hashPassword(password);
