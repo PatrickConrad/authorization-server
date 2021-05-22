@@ -5,7 +5,7 @@ Promise.promisifyAll(redis);
 
 const client = redis.createClient({
     port: `${process.env.REDIS_PORT}`,
-    host: `${process.env.REDIS_HOST}`
+    host: `${process.env.REDIS_URL}`
 });
 
 client.on('connect', ()=> {
