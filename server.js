@@ -34,6 +34,9 @@ app.use(express.json());
 
 app.use(express.urlencoded({extended: true}));
 
+app.get('/', (req, res, next)=>{
+    res.send("Welcome to my api")
+})
 app.use('/api/v1', router);
 
 app.listen(port, (err)=>{
