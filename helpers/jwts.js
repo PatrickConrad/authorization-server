@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const ErrorResponse = require("../utils/errorResponse");
 const { getRedis } = require('./redis');
 
+const userRefSecret = process.env.USER_REF_TOKEN_SECRET 
 const accessSecret = process.env.ACCESS_TOKEN_SECRET 
 const refreshSecret = process.env.REFRESH_TOKEN_SECRET
 const emailSecret = process.env.EMAIL_TOKEN_SECRET
@@ -11,6 +12,7 @@ const resetPasswordSecret = process.env.RESET_PASSWORD_TOKEN_SECRET
 const organizationSecret = process.env.ORGANIZATION_TOKEN_SECRET
 const originTokenSecret = process.env.ORIGIN_TOKEN_SECRET
 
+const userRefExp = parseInt(process.env.USER_REF_TOKEN_EXPIRES)
 const accessExp = parseInt(process.env.ACCESS_TOKEN_EXPIRES)
 const refreshExp = parseInt(process.env.REFRESH_TOKEN_EXPIRES)
 const emailExp = parseInt(process.env.EMAIL_TOKEN_EXPIRES)
@@ -22,6 +24,8 @@ const originExp = parseInt(process.env.ORIGIN_TOKEN_EXPIRES)
 
 const getInfo = (type) => {
     switch(type){
+        case "userRef":
+            return {secret: userRefSecret, expires: userRefExp, expireDate: new Date(Date.now() + userRefExp) };
         case "access":
             return {secret: accessSecret, expires: accessExp, expireDate: new Date(Date.now() + accessExp) };
         case "refresh":
@@ -45,15 +49,31 @@ const getInfo = (type) => {
 
 const sign = async (data, type) => {
     try{
-        const info= getInfo(type);
+        let info;
+        if(type === 'organization'){
+            info = {
+                secret: data.org.authServices.organizationSecret,
+                expires: organizationExp,
+                epireDate: new Date(Date.now() + originExp)
+            }
+        }
+        else if(type === 'userRef'){
+            info = {
+                secret: data.org.authServices.userSecret,
+                expires: data.org.authServices.userSecretExp,
+                expireDate: new Date(Date.now() + data.org.userSecretExp)
+            }
+        }
+        else{
+            info = getInfo(type);
+        }
         const {expireDate, secret, expires} = info;
         const id = data.id
-        const iss = data.host
         const payload = {
             id,
+            info: type === 'organization' ? data.info : null,
             expires,
-            expireDate,
-            iss
+            expireDate
         }
         const options = {
             expiresIn: expires
@@ -66,9 +86,16 @@ const sign = async (data, type) => {
     }
 }
 
-const verify = async (token, type) => {
-    const info = getInfo(type);
-    const {secret} = info;
+const verify = async (token, type, sec) => {
+    let secret;
+    console.log("TYPECHECK", type)
+    if(type === 'organization' || type === 'userRef'){
+        secret = sec
+    }
+    else {
+        const info = getInfo(type);
+        secret = info.secret;
+    }
     const payload = await jwt.verify(token, secret)
     if(!payload) return null;
     if(type === "refresh"){

@@ -13,11 +13,23 @@ const setOptions = async(type) => {
         if(!type){
             return null
         }
+        console.log("TYPE", type)
+        if(type === 'hasCredentials'){
+            let options = {
+                expires: '',
+                secure: true,
+                httpOnly: false,
+                sameSite: true
+            }
+            const expDate = await getExpDate("refresh");
+            options.expires = expDate;
+            return options
+        }
         const envSetting = process.env.NODE_ENV === 'production' ? true : false;
         let options = {
             expires: "",
             secure: envSetting,
-            httpOnly: envSetting,
+            httpOnly: type === 'refresh' ? false : true,
             sameSite: envSetting,
         }
         const expDate = await getExpDate(type);
@@ -25,6 +37,7 @@ const setOptions = async(type) => {
             return null
         }
         options.expires = expDate
+        console.log("OPTIONS", options)
         return options
     }
     catch(error){

@@ -22,7 +22,7 @@ const sendVerifyEmail = async(user, req, res, next) => {
         user.email = email;
         user.emailVerified = false;
     }
-    catch(error){s
+    catch(error){
         next(error)
     }
 }

@@ -1,6 +1,7 @@
 const helpers = require('../helpers');
 const models = require('../models');
 const ErrorResponse = require('../utils/errorResponse');
+const {getType, checkType} = require('../utils/typeChecker');
 
 const hasRefresh = async(req, res, next) => {
     try{
@@ -14,7 +15,10 @@ const hasRefresh = async(req, res, next) => {
             await helpers.redis.logoutRedis(req.token);       
             return next(new ErrorResponse("Access Denied: Expired", 401))
         }
-        req.user = refreshData.data;
+
+        getType(refreshData)
+
+        req.user = refreshData.id;
         req.token = refreshToken
         req.isLoggedIn = true;        
         next()
@@ -26,7 +30,9 @@ const hasRefresh = async(req, res, next) => {
 
 const hasAccess = async(req, res, next) => {
     try{
+        console.log("REQUEST: ", req.cookies)
         const accessToken = await helpers.cookies.cookieExtractor(req, "access");
+        console.log("ACCESSTOKEN", accessToken)
         if(!accessToken){
             return next(new ErrorResponse("Access Denied", 401));
         }
@@ -37,6 +43,8 @@ const hasAccess = async(req, res, next) => {
             return next(new ErrorResponse("Access Denied: Expired", 401))  
         }
         req.user = accessData.id
+
+
         next()
     }
     catch(err){
@@ -48,7 +56,6 @@ const isLoggedIn = async(req, res, next) => {
     try{
     const refreshToken = await helpers.cookies.cookieExtractor(req, "refresh");
         if(!refreshToken){
-            console.log("not refresh")
             req.isLoggedIn = false;
             return next()
         }

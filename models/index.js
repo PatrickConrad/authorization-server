@@ -1,11 +1,11 @@
 const Carrier = require('./Carrier');
-const Enterprise = require('./Organization');
+const Organization = require('./Organization');
 const User = require('./User');
 const Origin = require('./Origin');
 
 const models = {
     Carrier,
-    Enterprise,
+    Organization,
     User,
     Origin
 }

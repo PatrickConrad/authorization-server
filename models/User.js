@@ -17,6 +17,17 @@ const UserSchema = new mongoose.Schema({
             "Please provide a valid email"
         ]
     },
+    unverifiedEmail: {
+        type: String,
+        lowercase: true,
+        match: [
+            /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/,
+            "Please provide a valid email"
+        ]
+    },
+    unverifiedPhone: {
+        type: String,
+    },
     firstName: {
         type: String,
         required: [true, "Please add a first name."]
@@ -38,6 +49,11 @@ const UserSchema = new mongoose.Schema({
     },
 
     contactPreference: {
+        type: String,
+        enum: ['phone', 'email'],
+        default: 'email'
+    },
+    twoPointPreference: {
         type: String,
         enum: ['phone', 'email'],
         default: 'email'

@@ -19,17 +19,13 @@ const setRedis = (id, token) => {
     })
 }
 
-const getRedis = (token, id) => {
-    console.log(id)
-    console.log(token)
+const getRedis = (token) => {
     return new Promise((resolve, reject)=>{
         
         client.get(`${token}`, (err, object)=>{
             if(err){
                 reject(new ErrorResponse("Error with setting client", 500))
             }
-            if(object) 
-            console.log("redis: " + object)
         })
         resolve("found")
     })  

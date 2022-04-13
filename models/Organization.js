@@ -8,13 +8,44 @@ const organizationSchema = mongoose.Schema({
     type: {
         type: String,
         default: "developer",
-        // eNum: ["developer", "small business", "enterprise", "social", "work", "family", "emergency", "school", "local", "interest", "golobal", "regional", "managerial", "neighborhood"]
+        eNum: ["developer", "small business", "enterprise", "social", "work", "family", "emergency", "school", "local", "interest", "golobal", "regional", "managerial", "neighborhood"]
         
     },
     creatorId: {
         type: String,
-        default: "6097d748fc3f9746d8c343a4"
+        required: [true, "Must include creator Id"]
     },
+    authServices: [{
+        organizationSecret: {
+            type: String,
+            required: [true, "Add organization secret"]
+        },
+        userSecret: {
+            type: String,
+            required: [true, "Add organization secret"]
+        },
+        userSecretExp: {
+            type: Number,
+            default: 300000,
+            required: [true, "Must include expire time"]
+        },
+        authUrl: {
+            type: String,
+            default: ''
+        }
+    }],
+    users: [{
+        userId: {
+            type: String,
+            required: [true, "Users must have an associated ID"]
+
+        },
+        userAccess: {
+            type: String,
+            default: 'user'
+        }
+    }]
+
 })
 
 const Organization = mongoose.model("Organization", organizationSchema);
