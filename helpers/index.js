@@ -4,6 +4,7 @@ const redis = require('./redis');
 const cookies = require('./cookies');
 const email = require('./email');
 const phone = require('./phone');
+const google = require('./google')
 
 const helpers = {
     jwt: jwts,
@@ -11,7 +12,8 @@ const helpers = {
     redis,
     cookies,
     email,
-    phone
+    phone,
+    google
 }
 
 module.exports = helpers;

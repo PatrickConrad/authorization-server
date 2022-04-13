@@ -218,6 +218,7 @@ const loginPin = async(req, res, next) => {
         if(!match) return next(new ErrorResponse("Failed to verify login: invalid credentials", 401));
         user.phoneVerified = true;
         user.phonePin = '';
+        user.failedLogins = 0;
         await user.save();
         const aType = "access";
         const rType = "refresh";

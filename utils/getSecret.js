@@ -1,7 +1,13 @@
 const crypto = require("crypto");
 
 const getRandomSecret = (num) => {
-    const random = crypto.randomBytes(num).toString('hex')
+    let random;
+    if(num == undefined) {
+        random = crypto.randomBytes(32).toString('hex')
+    }
+    else{
+        random = crypto.randomBytes(num).toString('hex')
+    }
     return random;
 }
 

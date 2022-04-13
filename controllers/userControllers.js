@@ -39,7 +39,7 @@ const updateUser = async(req, res, next) => {
     try{
         const {id} = req.params;
         if(!id) return next(new ErrorResponse("Could not update: missing information", 400))
-        const {twoPointAuth, darkMode, username, currPassword, password, firstName, lastName, contactMethod, twoPointMethod} = req.body;
+        const {twoPointAuth, darkMode, username, currentPassword, newPassword, firstName, lastName, contactMethod, twoPointMethod} = req.body;
         if(!req.user && !req.admin) return next(new ErrorResponse("Could not update: unauthorized", 401))
         if(req.user !== id && !req.admin) return next(new ErrorResponse("Could not update: unmatched information", 401))
         const user = await models.User.findById(id).select("+password").select("+verificationToken").select("+phonePin");
@@ -50,21 +50,24 @@ const updateUser = async(req, res, next) => {
         const lN = !lastName ? user.lastName : lastName;
         const cp = !contactMethod ? user.contactPreference : contactMethod;
         const tpp = !twoPointMethod ? user.twoPointPreference : twoPointMethod;
+        const tpa = !twoPointAuth ? user.twoPointAuth : twoPointAuth;
+        console.log("Two point method: ", tpp);
+        console.log("Two point auth: ", tpa);
         const usernameTaken = await models.User.findOne({username: username});
         if(usernameTaken && `${usernameTaken._id}`!==`${user._id}`) return next(new ErrorResponse("Username taken", 400))
-        if(password && !currPassword) return next(new ErrorResponse("Must verify previous password in order to change it", 400))
+        if(newPassword && !currentPassword) return next(new ErrorResponse("Must verify previous password in order to change it", 400))
         let pass = user.password;
-        if(password){
-            const oldPassConfirmed = await helpers.bcrypt.comparePasswords(currPassword, pass);
+        if(newPassword && newPassword !== ''){
+            const oldPassConfirmed = await helpers.bcrypt.comparePasswords(currentPassword, pass);
             if(!oldPassConfirmed) return next(new ErrorResponse("The current password you entered does not match the previous", 400))
-            const hashPassword = await helpers.bcrypt.hashPassword(password);
+            const hashPassword = await helpers.bcrypt.hashPassword(newPassword);
             pass = hashPassword;
         }
         if((cp === 'phone' || tpp === 'phone') && !user.phoneVerified || !user.phoneNumber || !user.phoneCarrierEmail) return next(new ErrorResponse("Please verify phone to set it to preferred contact method", 400));
         user.twoPointPreference = tpp;
         user.username = un;
         user.contactPreference = cp;
-        user.twoPointAuth = twoPointAuth;
+        user.twoPointAuth = tpa;
         user.darkMode = dm;
         user.firstName = fN;
         user.lastName = lN;

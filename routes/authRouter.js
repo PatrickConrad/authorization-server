@@ -10,6 +10,7 @@ authRouter.put('/reset-password/:token', controllers.auth.resetPassword);
 authRouter.get('/update-access', middleware.auth.hasRefresh, controllers.auth.updateAccess);
 authRouter.post('/update-refresh',  middleware.auth.hasRefresh, controllers.auth.updateRefresh);
 authRouter.delete('/logout',  middleware.auth.hasAccess, controllers.auth.logout);
+authRouter.get('/google', controllers.auth.googleLogin);
 
 
 module.exports = authRouter;

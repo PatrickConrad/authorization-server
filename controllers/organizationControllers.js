@@ -10,8 +10,8 @@ const createOrganizationAccount = async (req, req, next) => {
                 message: 'Please include all information'
             })
         }
-        const userSecret = getRandomSecret(32);
-        const organizationSecret = getRandomSecret(32);
+        const userSecret = getRandomSecret();
+        const organizationSecret = getRandomSecret();
         const org = new models.Organization({
             name,
             type,

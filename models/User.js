@@ -55,6 +55,7 @@ const UserSchema = new mongoose.Schema({
     },
     twoPointPreference: {
         type: String,
+
         enum: ['phone', 'email'],
         default: 'email'
     },
@@ -109,6 +110,10 @@ const UserSchema = new mongoose.Schema({
         default: ['user']
     },
     darkMode: {
+        type: Boolean,
+        default: false
+    },
+    googleUser: {
         type: Boolean,
         default: false
     }

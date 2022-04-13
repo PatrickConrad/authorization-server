@@ -3,6 +3,8 @@ const ErrorResponse = require("../utils/errorResponse");
 const helpers = require('../helpers');
 const models = require('../models');
 const sendMessage = require("../utils/sendgrid");
+const getRandomSecret = require('../utils/getSecret');
+const loginUser = require('../helpers/loginUser');
 
 const organizationAuth = async (req, res, next) => {
     try {
@@ -70,6 +72,154 @@ const organizationAuth = async (req, res, next) => {
     }
 }
 
+const googleLogin = async(req, res, next) => {
+    try {
+        //get code from query string
+        const code = req.query.code;
+
+        console.log("CODE: ", code);
+
+        if(!code){
+            return console.log("NO code")
+        }         
+
+        //get id and access token with code
+
+        const {id_token, access_token} = await helpers.google.getGoogleTokens({code});
+        console.log("GOOGLE DATA: ", id_token, "; access: ", access_token);
+
+        //get user with tokens
+        const user = await helpers.google.getGoogleUser({access_token, id_token});
+        if(!user){
+            return console.log("No user found");
+        }
+        if(!user.email){
+            return console.log("No user email")
+        }
+        if(!user.verified_email){
+            return console.log("Google email not verified");
+        }
+        //upsert the user and add cookies
+        const userExists = await models.User.findOne({email: user.email})
+        if(!userExists) {
+            const tempPass = getRandomSecret(10);
+            console.log("tempPass: ", tempPass);
+            const hashedTempPass = await helpers.bcrypt.hashPassword(tempPass);
+            const newUser = new models.User({
+                isVerified: true,
+                contactPreference: "email",
+                twoPointPreference: "email",
+                emailVerified: true,
+                username: user.email,
+                email: user.email,
+                unverifiedEmail: '',
+                firstName: user.given_name,
+                lastName: user.family_name,
+                password: hashedTempPass,
+                googleUser: true
+            });
+            await newUser.save()
+            const {_id} = newUser;
+            const aType = "access"
+            const rType = "refresh"
+            const refToken = await helpers.jwt.sign({id: _id, host: req.hostname, ip: req.ip}, rType)
+            const accToken = await helpers.jwt.sign({id: _id, host: req.hostname}, aType);
+            await helpers.redis.setRedis(_id, refToken)
+            res.cookie(
+                rType,
+                refToken,
+                helpers.cookies.setOptions(rType)
+            )
+            res.cookie(
+                aType,
+                accToken,
+                helpers.cookies.setOptions(aType)
+            )
+            res.cookie(
+                "hasCredentials", 
+                "true",
+                helpers.cookies.setOptions("hasCredentials")
+            )
+            console.log("l", _id)
+            return res.redirect('http://localhost:3000/vboms/authorized').status(201).json({
+                user: {id: user._id, firstName: user.firstName, lastName: user.lastName, username: user.username, roles: user.roles, email: user.email, phoneNumber: user.phoneNumber?? '', phoneEmail: user.phoneCarrierEmail?? '', contactPreference: user.contactPreference?? 'email', phoneVerified: user.phoneVerified?? false},
+                isAuth: true,
+                isAdmin: user.isAdmin,
+                success: true
+            })
+        }
+        console.log("exists ", userExists)
+        if(!userExists.twoPointAuth){
+            userExists.failedLogins = 0;
+            await userExists.save();
+            const {_id} = userExists;
+            const aType = "access"
+            const rType = "refresh"
+            const refToken = await helpers.jwt.sign({id: _id, host: req.hostname, ip: req.ip}, rType)
+            const accToken = await helpers.jwt.sign({id: _id, host: req.hostname}, aType);
+            await helpers.redis.setRedis(_id, refToken)
+            res.cookie(
+                rType,
+                refToken,
+                helpers.cookies.setOptions(rType)
+            )
+            res.cookie(
+                aType,
+                accToken,
+                helpers.cookies.setOptions(aType)
+            )
+            res.cookie(
+                "hasCredentials", 
+                "true",
+                helpers.cookies.setOptions("hasCredentials")
+            )
+            console.log("l", _id)
+            return res.redirect('http://localhost:3000/vboms/authorized').status(201).json({
+                user: {id: userExists._id, firstName: userExists.firstName, lastName: userExists.lastName, username: userExists.username, roles: userExists.roles, email: userExists.email, phoneNumber: userExists.phoneNumber?? '', phoneEmail: userExists.phoneCarrierEmail?? '', contactPreference: userExists.contactPreference?? 'email', phoneVerified: userExists.phoneVerified?? false},
+                isAuth: true,
+                isAdmin: userExists.isAdmin,
+                success: true
+            })
+        }
+        if(userExists.twoPointPreference === 'email' || !userExists.phoneNumber){
+            const emailToken = await helpers.jwt.sign({id: userExists._id}, 'email');
+            if(!emailToken) return next(new ErrorResponse("Error signing", 500));
+            console.log("EmailToken: ",emailToken);
+            const link =  `http://localhost:3000/vboms/auth/twoPoint/${emailToken}`
+            // const isSent = await sendMessage('email', req.body.email, "twoPoint", link);
+            // if(!isSent) return next(new ErrorResponse("Verification Email not sent", 500));
+            user.verificationToken = emailToken;
+            await userExists.save();
+            console.log(link)
+            return res.redirect('http://localhost:3000/vboms/auth/google-email-login').status(200).json({
+                success: true,
+                twoPointAuth: true,
+                type: 'email'
+            })
+        }
+        const getPin = helpers.phone.getPin();
+        const pin = `${getPin}`;
+        const hashedPin = await helpers.bcrypt.hashPassword(pin);
+        const pinToken = await helpers.jwt.sign({id: userExists._id, host: req.hostname}, "phone");
+        user.phonePin = hashedPin;
+        console.log("pin", pin)
+        const combinedEmail = ususerExistser.phoneNumber + userExists.phoneCarrierEmail;
+        await userExists.save();
+        const isSent = await sendMessage("phone", combinedEmail, "verify", pin);
+    
+        return res.redirect('http://localhost:3000/vboms/auth/phone-verify').status(201).json({
+            success: true,
+            token: pinToken,
+            twoPointAuth: true,
+            type: 'phone'
+        })
+    }
+    catch(err){
+        console.log("ERROR: ", err.message)
+        next(err)
+    }
+}
+
 const register = async(req, res, next) => {
     try{
         console.log(req.body)
@@ -113,6 +263,10 @@ const register = async(req, res, next) => {
 const login = async(req, res, next) => {
     try{
         const {identifier, password} = req.body;
+        console.log(
+            "request body: ",
+            req.body
+        )
         const user = await models.User.findOne({username: identifier}).select("+password") || await models.User.findOne({email: identifier}).select("+password") || await models.User.findOne({phoneNumber: identifier}).select("+password");
         if(!user){
             return next(new ErrorResponse("Invalid Credentials", 401))
@@ -128,6 +282,8 @@ const login = async(req, res, next) => {
         }
         if(!user.isVerified) return next(new ErrorResponse("Please verify your account", 401));
         if(!user.twoPointAuth){
+            user.failedLogins = 0;
+            await user.save();
             const {_id} = user;
             const aType = "access"
             const rType = "refresh"
@@ -330,7 +486,7 @@ const resetPassword = async(req, res, next) => {
         const {password} = req.body;
         if(!token || !password) return next(new ErrorResponse("Failed to reset: missing information", 401));
         const info = await helpers.jwt.verify(token, "resetPW");
-        if(!info) return next(new ErrorResponse("Failed to reset: no info"));
+        if(!info) return next(new ErrorResponse("Failed to reset: no info", 400));
         const expired = helpers.jwt.expired(info);
         if(expired) return next(new ErrorResponse("Failed to reset: access expired!", 404));
         const user = await models.User.findById(info.id).select("+password").select('+resetToken');
@@ -357,7 +513,8 @@ const auth = {
     login,
     logout,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    googleLogin
 }
 
 module.exports = auth
